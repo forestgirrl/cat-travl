@@ -299,7 +299,7 @@ function drawCatRocket(c, x, y, vx, scale=1, alpha=1) {
   fg.addColorStop(1,'rgba(60,100,220,0)');
   c.fillStyle = fg;
   c.beginPath(); c.ellipse(0, RH*0.6+flameH*0.5, 9, flameH*0.5, 0,0,Math.PI*2); c.fill();
-  const iw = RW*2.6, ih = RH*3.2;
+  const iw = RW*2.0, ih = RH*2.5;
   c.drawImage(IMG_ROCKET, -iw/2, -ih/2, iw, ih);
   c.restore();
 }
@@ -351,7 +351,7 @@ function drawBox(c, x, y, size, animT) {
 // ── Game state ──────────────────────────────────────────
 function initGame(){
   rocketX=W/2; rocketY=H-120; rocketVX=0; rocketVY=0;
-  speed=5; distance=0; lives=MAX_LIVES; invincible=false; invincibleTimer=0;
+  speed=5; distance=0; lives=MAX_LIVES; invincible=false; invincibleTimer=0; slowTimer=0;
   meteors=[]; particles=[]; shooting_stars=[];
   gameStarted=false; readyTimer=120;
   meteorTimer=0; starTimer=0; ssTimer=0; tick=0;
@@ -397,7 +397,7 @@ function resetGame(){
 const STAR_TYPES=['blue','pink','yellow'];
 function spawnMeteor(){
   const baseSize=Math.random()*12+10;
-  const sizeMultiplier=[1,1,2,2,3][Math.floor(Math.random()*5)];
+  const sizeMultiplier=1+Math.random();
   const size=baseSize*sizeMultiplier;
   const x=Math.random()*(W-size*2-20)+size+10;
   meteors.push({x,y:-size*2,size,spd:speed*0.7+Math.random()*speed*0.4,type:'box',animT:Math.random()*100});
@@ -425,10 +425,14 @@ function spawnCollect(x,y,type){
   }
 }
 
+let slowTimer=0;
 function hitRocket(){
   if(invincible)return;
   lives--; updateLivesUI();
   spawnParticles(rocketX,rocketY,true);
+  // 緩速效果：速度減半，並啟動緩速計時器（150幀慢慢回升）
+  speed=Math.max(speed*0.5, 5);
+  slowTimer=150;
   if(lives<=0){spawnParticles(rocketX,rocketY,false);endGame();}
   else{invincible=true;invincibleTimer=120;}
 }
@@ -534,7 +538,16 @@ function update(dt){
   rocketX=Math.max(MIN_X,Math.min(MAX_X,rocketX+rocketVX));
   rocketY=Math.max(MIN_Y,Math.min(MAX_Y,rocketY+rocketVY));
   if(invincible){invincibleTimer--;if(invincibleTimer<=0)invincible=false;}
-  if(gameStarted){speed=Math.min(speed+0.001,22);distance+=speed*dt*0.005;}
+  if(gameStarted){
+    if(slowTimer>0){
+      // 緩速中：速度緩緩回升，比正常加速快一點
+      speed=Math.min(speed+0.04,22);
+      slowTimer--;
+    } else {
+      speed=Math.min(speed+0.001,22);
+    }
+    distance+=speed*dt*0.005;
+  }
   for(let s of stars_bg){s.y+=s.spd*(gameStarted?1.5:0.5);if(s.y>H){s.y=0;s.x=Math.random()*W;}}
 
   if(gameStarted){
@@ -547,13 +560,12 @@ function update(dt){
       m.y+=m.spd; m.animT++;
       if(m.type==='box'){
         const dx=rocketX-m.x,dy=rocketY-m.y;
-        if(Math.sqrt((dx/(RW*0.78))**2+((dy+RH*0.1)/(RH*1.0))**2)<1+m.size*0.04){meteors.splice(i,1);hitRocket();if(state==='gameover')return;continue;}
+        const rHalfW=RW*1.0, rHalfH=RH*1.25;
+        if(Math.abs(dx)<rHalfW+m.size*0.5 && Math.abs(dy)<rHalfH+m.size*0.5){meteors.splice(i,1);hitRocket();if(state==='gameover')return;continue;}
       }else if(!m.collected){
         const dx=rocketX-m.x,dy=rocketY-m.y;
-        // Tip of rocket: top-center of drawn image
-        const tipX=rocketX, tipY=rocketY-RH*1.55;
-        const tdx=tipX-m.x, tdy=tipY-m.y;
-        if(Math.sqrt(tdx*tdx+tdy*tdy)<m.size*1.4+10){m.collected=true;speed=Math.min(speed+(m.starType==='yellow'?3:m.starType==='pink'?1.5:0.8),22);spawnCollect(m.x,m.y,m.starType);}
+        const rHalfW=RW*1.0, rHalfH=RH*1.25;
+        if(Math.abs(dx)<rHalfW+m.size*0.8 && Math.abs(dy)<rHalfH+m.size*0.8){m.collected=true;speed=Math.min(speed+(m.starType==='yellow'?3:m.starType==='pink'?1.5:0.8),22);spawnCollect(m.x,m.y,m.starType);}
       }
       if(m.y>H+40)meteors.splice(i,1);
     }
@@ -587,7 +599,7 @@ function draw(){
   // Rocket
   const showRocket=!invincible||Math.floor(invincibleTimer/6)%2===0;
   if(invincible&&showRocket){
-    ctx.save();const pulse=0.5+0.5*Math.sin(invincibleTimer*0.3);ctx.strokeStyle=`rgba(100,200,255,${0.35+pulse*0.45})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(rocketX,rocketY-2,RW*0.7,0,Math.PI*2);ctx.stroke();ctx.restore();
+    ctx.save();const pulse=0.5+0.5*Math.sin(invincibleTimer*0.3);ctx.strokeStyle=`rgba(100,200,255,${0.35+pulse*0.45})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(rocketX,rocketY-2,RW*0.55,0,Math.PI*2);ctx.stroke();ctx.restore();
   }
   if(showRocket) drawCatRocket(ctx,rocketX,rocketY,rocketVX,1,1);
 }
