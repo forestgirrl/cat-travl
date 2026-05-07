@@ -19,10 +19,32 @@
 .btn-green { flex: 1; background: linear-gradient(180deg, #7dd860, #4daa30); border: none; border-radius: 24px; color: #fff; font-size: 16px; font-weight: 700; padding: 12px; cursor: pointer; box-shadow: 0 4px 0 #2d7a10; pointer-events: all; transition: transform 0.1s; }
 .btn-blue { flex: 1; background: linear-gradient(180deg, #60c8e8, #2898c8); border: none; border-radius: 24px; color: #fff; font-size: 16px; font-weight: 700; padding: 12px; cursor: pointer; box-shadow: 0 4px 0 #1060a0; pointer-events: all; transition: transform 0.1s; }
 .btn-green:active, .btn-blue:active { transform: translateY(2px); }
-#gameOverScreen { z-index: 10; background: rgba(5,15,40,0.95); padding: 24px; display: none; flex-direction: column; align-items: center; }
-.go-title { font-size: 36px; font-weight: 900; color: #ff6060; text-shadow: 0 0 20px rgba(255,80,80,0.8); margin-bottom: 8px; font-family: 'Arial Black', sans-serif; }
-.go-dist { font-size: 18px; color: #8ae8ff; margin-bottom: 4px; }
-.go-best { font-size: 14px; color: #6090b0; margin-bottom: 24px; }
+#gameOverScreen { z-index: 10; background: linear-gradient(180deg,#0d1f3c 0%,#1a3a6b 100%); padding: 16px 12px; display: none; flex-direction: column; align-items: center; overflow-y: auto; }
+.go-speedometer { display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; }
+.go-dist-top { font-size: 22px; font-weight: 800; color: #8ae8ff; text-shadow: 0 0 10px rgba(100,200,255,0.7); }
+.go-title { font-size: 44px; font-weight: 900; color: #e8503a; text-shadow: 0 4px 16px rgba(232,80,58,0.6), 0 0 30px rgba(255,100,80,0.4); font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 3px; margin: 6px 0 10px; font-style: italic; }
+.go-parchment { background: linear-gradient(160deg,#e8d9b0 0%,#f5ead0 40%,#eedbb0 100%); border-radius: 16px; border: 3px solid #c8a060; box-shadow: 0 6px 24px rgba(100,60,0,0.35); padding: 14px 18px 16px; width: 100%; max-width: 320px; position: relative; }
+.go-parchment-title { text-align: center; font-size: 17px; font-weight: 800; color: #4a2c00; letter-spacing: 2px; margin-bottom: 10px; }
+.go-info-row { text-align: center; font-size: 13px; color: #5a3800; margin-bottom: 2px; }
+.go-score-val { font-size: 20px; font-weight: 800; color: #e83030; text-align: center; margin-bottom: 8px; }
+.go-score-best { font-size: 20px; font-weight: 800; color: #e83030; text-align: center; margin-bottom: 10px; }
+.go-milestone-label { font-size: 12px; color: #5a3800; text-align: center; margin-bottom: 4px; font-weight: 700; }
+.go-milestone-bar { display: flex; align-items: center; justify-content: space-between; position: relative; margin-bottom: 4px; padding: 0 4px; }
+.go-milestone-dot { width: 12px; height: 12px; border-radius: 50%; background: #c8a060; position: relative; z-index: 2; }
+.go-milestone-dot.reached { background: #e06030; }
+.go-milestone-line { flex: 1; height: 3px; background: #c8a060; }
+.go-milestone-line.reached { background: #e06030; }
+.go-milestone-nums { display: flex; justify-content: space-between; padding: 0 0px; margin-bottom: 12px; }
+.go-milestone-num { font-size: 10px; color: #7a4a00; font-weight: 700; }
+.go-rewards-row { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; }
+.go-reward-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.go-reward-icon-wrap { position: relative; width: 44px; height: 44px; }
+.go-reward-icon-wrap img, .go-reward-icon-wrap canvas { width: 44px; height: 44px; border-radius: 8px; }
+.go-reward-check { position: absolute; bottom: -2px; right: -2px; font-size: 16px; }
+.go-reward-count { font-size: 11px; color: #5a3800; font-weight: 700; }
+.go-new-record { text-align: center; font-size: 14px; font-weight: 900; color: #e06030; letter-spacing: 2px; margin: 6px 0 10px; text-shadow: 0 0 8px rgba(224,96,48,0.5); }
+.go-end-btn { background: linear-gradient(180deg, #f0a898, #e87060); border: none; border-radius: 28px; color: #fff; font-size: 20px; font-weight: 800; padding: 14px 60px; cursor: pointer; box-shadow: 0 5px 0 #c04030, 0 2px 12px rgba(200,60,40,0.4); pointer-events: all; transition: transform 0.1s; margin-top: 4px; }
+.go-end-btn:active { transform: translateY(3px); }
 </style>
 <div id="wrapper">
   <canvas id="gameCanvas"></canvas>
@@ -150,10 +172,90 @@
   </div>
 
   <div class="screen" id="gameOverScreen">
-    <div class="go-title">GAME OVER</div>
-    <div class="go-dist" id="finalDist">0.0 km</div>
-    <div class="go-best" id="bestDist">最佳記錄: 0.0 km</div>
-    <button class="btn-blue" style="pointer-events:all; padding:14px 40px; font-size:18px;" onclick="resetGame()">再玩一次</button>
+    <!-- Top: distance + speedometer -->
+    <div class="go-speedometer">
+      <div class="go-dist-top" id="finalDistTop">0.0 km</div>
+      <div style="margin:2px auto; width:72px; height:32px;">
+        <svg width="72" height="32" viewBox="0 0 80 36">
+          <path d="M8 32 A36 36 0 0 1 72 32" fill="none" stroke="#334" stroke-width="5"/>
+          <path d="M8 32 A36 36 0 0 1 72 32" fill="none" stroke="#1a6a9a" stroke-width="3"/>
+          <line id="goNeedle" x1="40" y1="32" x2="40" y2="6" stroke="#e05050" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="40" cy="32" r="3" fill="#ccc"/>
+        </svg>
+      </div>
+      <div style="font-size:12px;color:#8ac8e8;font-weight:600;" id="finalSpeedDisplay">0.0 km/s</div>
+    </div>
+
+    <!-- GAMEOVER title -->
+    <div class="go-title">GAMEOVER</div>
+
+    <!-- Parchment result card -->
+    <div class="go-parchment">
+      <!-- Corner decorations -->
+      <div style="position:absolute;top:8px;left:8px;width:18px;height:18px;border-top:2px solid #a07030;border-left:2px solid #a07030;border-radius:4px 0 0 0;"></div>
+      <div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-top:2px solid #a07030;border-right:2px solid #a07030;border-radius:0 4px 0 0;"></div>
+      <div style="position:absolute;bottom:8px;left:8px;width:18px;height:18px;border-bottom:2px solid #a07030;border-left:2px solid #a07030;border-radius:0 0 0 4px;"></div>
+      <div style="position:absolute;bottom:8px;right:8px;width:18px;height:18px;border-bottom:2px solid #a07030;border-right:2px solid #a07030;border-radius:0 0 4px 0;"></div>
+      <!-- ℹ info button -->
+      <div style="position:absolute;top:10px;right:28px;width:18px;height:18px;background:#c8a060;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:900;">i</div>
+
+      <div class="go-parchment-title">冒險結果</div>
+      <div class="go-info-row">最高分數</div>
+      <div class="go-score-best" id="goBestDist">239p</div>
+      <div class="go-info-row">分數</div>
+      <div class="go-score-val" id="goFinalDist">239p</div>
+
+      <div class="go-milestone-label">獎勵</div>
+      <!-- Milestone progress bar -->
+      <div class="go-milestone-bar">
+        <div class="go-milestone-dot" id="goMileDot0"></div>
+        <div class="go-milestone-line" id="goMileLine0"></div>
+        <div class="go-milestone-dot" id="goMileDot1"></div>
+        <div class="go-milestone-line" id="goMileLine1"></div>
+        <div class="go-milestone-dot" id="goMileDot2"></div>
+      </div>
+      <div class="go-milestone-nums">
+        <span class="go-milestone-num">15p</span>
+        <span class="go-milestone-num" style="flex:1;text-align:center;">30p</span>
+        <span class="go-milestone-num">45p</span>
+      </div>
+
+      <!-- Reward icons row -->
+      <div class="go-rewards-row">
+        <div class="go-reward-item" id="goReward0">
+          <div class="go-reward-icon-wrap">
+            <canvas id="goRewardCanvas0" width="44" height="44"></canvas>
+            <span class="go-reward-check" id="goRewardCheck0">✅</span>
+          </div>
+          <div class="go-reward-count">x5</div>
+        </div>
+        <div class="go-reward-item" id="goReward1">
+          <div class="go-reward-icon-wrap">
+            <canvas id="goRewardCanvas1" width="44" height="44"></canvas>
+            <span class="go-reward-check" id="goRewardCheck1">✅</span>
+          </div>
+          <div class="go-reward-count">x1</div>
+        </div>
+        <div class="go-reward-item" id="goReward2">
+          <div class="go-reward-icon-wrap">
+            <canvas id="goRewardCanvas2" width="44" height="44"></canvas>
+            <span class="go-reward-check" id="goRewardCheck2">✅</span>
+          </div>
+          <div class="go-reward-count">x1</div>
+        </div>
+      </div>
+
+      <!-- New record badge -->
+      <div class="go-new-record" id="goNewRecord" style="display:none;">NEW RECORD</div>
+
+      <!-- Bonus reward when new record -->
+      <div id="goNewRecordReward" style="display:none;text-align:center;margin-bottom:6px;">
+        <canvas id="goNewRecordCanvas" width="44" height="44" style="border-radius:8px;"></canvas>
+        <div style="font-size:11px;color:#5a3800;font-weight:700;">x5</div>
+      </div>
+    </div>
+
+    <button class="go-end-btn" onclick="resetGame()">結束</button>
   </div>
 </div>
 
@@ -330,11 +432,81 @@ function hitRocket(){
   if(lives<=0){spawnParticles(rocketX,rocketY,false);endGame();}
   else{invincible=true;invincibleTimer=120;}
 }
+// ── Reward milestones ──────────────────────────────────
+const MILESTONES = [15, 30, 45];
+const REWARD_ICONS = [IMG_STAR_BLUE, IMG_STAR_PINK, IMG_STAR_YELLOW];
+const REWARD_LABELS = ['x5','x1','x1'];
+
+function drawRewardCanvas(canvasEl, img) {
+  const c = canvasEl.getContext('2d');
+  c.clearRect(0, 0, 44, 44);
+  c.drawImage(img, 2, 2, 40, 40);
+}
+
+function updateHomeRewards() {
+  const rewardCards = document.querySelectorAll('.reward-card');
+  const p = bestDistance;
+  const thresholds = [15, 30, 45];
+  rewardCards.forEach((card, i) => {
+    const lockEl = card.querySelector('.lock-icon');
+    if (lockEl) lockEl.style.display = p >= thresholds[i] ? 'none' : '';
+    card.style.opacity = p >= thresholds[i] ? '1' : '0.6';
+  });
+  const scoreInfoEl = document.querySelector('.score-info');
+  if (scoreInfoEl) scoreInfoEl.textContent = '累積分數 ' + Math.floor(bestDistance) + 'p';
+}
+
 function endGame(){
   state='gameover';
+  const isNewRecord = distance > bestDistance;
   if(distance>bestDistance)bestDistance=distance;
-  document.getElementById('finalDist').textContent=distance.toFixed(1)+' km';
-  document.getElementById('bestDist').textContent='最佳記錄: '+bestDistance.toFixed(1)+' km';
+  // Update home rewards
+  updateHomeRewards();
+
+  // Fill game over UI
+  const dist = Math.floor(distance);
+  const best = Math.floor(bestDistance);
+  document.getElementById('finalDistTop').textContent = distance.toFixed(1) + ' km';
+  document.getElementById('finalSpeedDisplay').textContent = speed.toFixed(1) + ' km/s';
+  document.getElementById('goFinalDist').textContent = dist + 'p';
+  document.getElementById('goBestDist').textContent = best + 'p';
+
+  // Needle position for game over
+  const sf = Math.min((speed-5)/17,1), ang = -2.2+sf*4.4;
+  document.getElementById('goNeedle').setAttribute('x2',(40+Math.sin(ang)*26).toFixed(1));
+  document.getElementById('goNeedle').setAttribute('y2',(32-Math.cos(ang)*26).toFixed(1));
+
+  // Milestone dots & lines
+  for (let i = 0; i < 3; i++) {
+    const reached = dist >= MILESTONES[i];
+    document.getElementById('goMileDot'+i).className = 'go-milestone-dot' + (reached?' reached':'');
+  }
+  for (let i = 0; i < 2; i++) {
+    const reached = dist >= MILESTONES[i+1];
+    document.getElementById('goMileLine'+i).className = 'go-milestone-line' + (reached?' reached':'');
+  }
+
+  // Reward icons
+  for (let i = 0; i < 3; i++) {
+    drawRewardCanvas(document.getElementById('goRewardCanvas'+i), REWARD_ICONS[i]);
+    const checkEl = document.getElementById('goRewardCheck'+i);
+    const reached = dist >= MILESTONES[i];
+    checkEl.style.display = reached ? '' : 'none';
+    document.getElementById('goReward'+i).style.opacity = reached ? '1' : '0.35';
+  }
+
+  // New record
+  const nrEl = document.getElementById('goNewRecord');
+  const nrRewardEl = document.getElementById('goNewRecordReward');
+  if (isNewRecord) {
+    nrEl.style.display = '';
+    nrRewardEl.style.display = '';
+    drawRewardCanvas(document.getElementById('goNewRecordCanvas'), IMG_BOX);
+  } else {
+    nrEl.style.display = 'none';
+    nrRewardEl.style.display = 'none';
+  }
+
   document.getElementById('hud').style.display='none';
   document.getElementById('readyLabel').style.display='none';
   document.getElementById('gameOverScreen').style.display='flex';
