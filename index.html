@@ -46,15 +46,94 @@ html, body { width: 100%; height: 100%; display: flex; align-items: center; just
 .go-new-record { text-align: center; font-size: 14px; font-weight: 900; color: #e06030; letter-spacing: 2px; margin: 6px 0 10px; text-shadow: 0 0 8px rgba(224,96,48,0.5); }
 .go-end-btn { background: linear-gradient(180deg, #f0a898, #e87060); border: none; border-radius: 28px; color: #fff; font-size: 20px; font-weight: 800; padding: 14px 60px; cursor: pointer; box-shadow: 0 5px 0 #c04030, 0 2px 12px rgba(200,60,40,0.4); pointer-events: all; transition: transform 0.1s; margin-top: 4px; }
 .go-end-btn:active { transform: translateY(3px); }
+
+/* ── Launch animation overlay ─────────────────────── */
+#launchOverlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: none; z-index: 20;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+  pointer-events: none;
+  background: transparent;
+}
+#launchOverlay.active { display: flex; }
+
+.launch-label {
+  font-family: 'Arial Black', sans-serif;
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-shadow: 0 0 30px rgba(100,220,255,1), 0 0 60px rgba(60,160,255,0.6);
+  position: absolute;
+  top: 120px;
+  opacity: 0;
+  transform: scale(0.6);
+}
+.launch-label.ready {
+  font-size: 52px;
+  color: #8ae8ff;
+  animation: labelPop 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.2s forwards,
+             labelFade 0.4s ease-in 1.0s forwards;
+}
+.launch-label.start {
+  font-size: 62px;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(100,220,255,1), 0 0 80px rgba(60,200,255,0.8);
+  animation: labelPop 0.55s cubic-bezier(0.34,1.56,0.64,1) 1.4s forwards,
+             labelFade 0.4s ease-in 2.3s forwards;
+}
+
+@keyframes labelPop {
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes labelFade {
+  to { opacity: 0; transform: scale(1.15); }
+}
+
+#launchRocket {
+  position: absolute;
+  transform-origin: center bottom;
+  animation: rocketShrink 2.0s cubic-bezier(0.4,0,0.2,1) 0.1s forwards;
+}
+
+@keyframes rocketShrink {
+  0%   { width: 160px; height: 230px; top: calc(50% - 112px); left: calc(50% - 90px); opacity: 1; }
+  70%  { width: 160px; height: 230px; top: calc(50% - 112px); left: calc(50% - 90px); opacity: 1; }
+  100% { width: 70px;  height: 100px; top: calc(100% - 130px); left: calc(50% - 40px); opacity: 1; }
+}
+
+/* Speed lines for launch atmosphere */
+#launchLines {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden; pointer-events: none;
+}
+.speed-line {
+  position: absolute;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, rgba(100,180,255,0.25) 50%, transparent 100%);
+  animation: speedLine 0.45s linear infinite;
+  opacity: 0;
+}
+@keyframes speedLine {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
 </style>
 <div id="wrapper">
   <canvas id="gameCanvas"></canvas>
   <div id="ui">
-    <div id="hud" style="display:none; padding:10px 12px;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div style="text-align:center; flex:1;">
-          <div style="font-size:20px; font-weight:700; color:#fff; text-shadow:0 0 10px rgba(100,200,255,0.8);" id="distDisplay">0.0 km</div>
-          <div style="margin:2px auto; width:72px; height:32px;">
+    <div id="hud" style="display:none; padding:8px 12px 0;">
+      <!-- km 距離：置中上方 -->
+      <div style="text-align:center; margin-bottom:4px;">
+        <div style="display:inline-block; background:rgba(0,0,0,0.45); border-radius:20px; padding:4px 22px;">
+          <div style="font-size:22px; font-weight:800; color:#fff; text-shadow:0 0 12px rgba(100,200,255,0.9); letter-spacing:1px;" id="distDisplay">0.0 km</div>
+        </div>
+      </div>
+      <!-- 速度表（左）+ 生命（右） -->
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="text-align:center;">
+          <div style="margin:0 auto; width:72px; height:32px;">
             <svg width="72" height="32" viewBox="0 0 80 36">
               <path d="M8 32 A36 36 0 0 1 72 32" fill="none" stroke="#334" stroke-width="5"/>
               <path d="M8 32 A36 36 0 0 1 72 32" fill="none" stroke="#1a6a9a" stroke-width="3"/>
@@ -62,9 +141,9 @@ html, body { width: 100%; height: 100%; display: flex; align-items: center; just
               <circle cx="40" cy="32" r="3" fill="#ccc"/>
             </svg>
           </div>
-          <div style="font-size:12px; color:#8ac8e8; font-weight:600;" id="speedDisplay">5.0 km/s</div>
+          <div style="font-size:11px; color:#8ac8e8; font-weight:600;" id="speedDisplay">5.0 km/s</div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center; padding-top:4px;" id="livesDisplay"></div>
+        <div style="display:flex; gap:6px; align-items:center;" id="livesDisplay"></div>
       </div>
     </div>
     <div id="readyLabel" style="display:none; text-align:center; margin-top:6px;">
@@ -257,6 +336,14 @@ html, body { width: 100%; height: 100%; display: flex; align-items: center; just
     </div>
 
     <button class="go-end-btn" onclick="resetGame()">結束</button>
+  </div>
+
+  <!-- Launch Animation Overlay -->
+  <div id="launchOverlay">
+    <div id="launchLines"></div>
+    <img id="launchRocket" src="" alt="" />
+    <span class="launch-label ready">READY</span>
+    <span class="launch-label start">START!</span>
   </div>
 </div>
 
@@ -518,6 +605,8 @@ function drawBox(c, x, y, size, animT) {
   function doPreview(){
     pc.clearRect(0,0,120,100);
     pc.drawImage(IMG_ROCKET, 30, 4, 60, 90);
+    // 預先設定 launchRocket 的 src
+    document.getElementById('launchRocket').src = IMG_ROCKET.src;
   }
   const imgs=[IMG_ROCKET,IMG_BOX,IMG_STAR_BLUE,IMG_STAR_PINK,IMG_STAR_YELLOW];
   if(imgs.every(i=>i.complete&&i.naturalWidth>0)) doPreview();
@@ -529,10 +618,17 @@ function initGame(){
   rocketX=W/2; rocketY=H-RH*1.5; rocketVX=0; rocketVY=0;
   speed=5; distance=0; lives=MAX_LIVES; invincible=false; invincibleTimer=0; slowTimer=0;
   meteors=[]; particles=[]; shooting_stars=[];
-  gameStarted=false; readyTimer=120;
+  gameStarted=false; readyTimer=0;
   meteorTimer=0; starTimer=0; ssTimer=0; tick=0;
   stars_bg=[];
-  for(let i=0;i<80;i++) stars_bg.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.3,spd:Math.random()*0.5+0.2,bright:Math.random()});
+  for(let i=0;i<100;i++) stars_bg.push({
+    x:Math.random()*W, y:Math.random()*H,
+    r:Math.random()*1.8+0.3,
+    spd:Math.random()*1.2+0.5,
+    bright:Math.random(),
+    // 藍色調星星色彩
+    color: Math.random()<0.6 ? '#b8d8ff' : Math.random()<0.5 ? '#d0e8ff' : '#8ab8e8'
+  });
   updateLivesUI();
 }
 
@@ -555,18 +651,47 @@ function launchGame(){
   document.getElementById('tutorialScreen').style.display='none';
   startGame();
 }
+
 function startGame(){
   document.getElementById('startScreen').style.display='none';
-  document.getElementById('hud').style.display='block';
-  document.getElementById('readyLabel').style.display='block';
   initGame(); state='playing'; lastTime=null;
+  gameStarted = true;  // 立即開始，可操作火箭
+  document.getElementById('hud').style.display='block';  // 立即顯示HUD
   frameId=requestAnimationFrame(loop);
+
+  // 啟動 launch 動畫
+  const overlay = document.getElementById('launchOverlay');
+  const launchRocket = document.getElementById('launchRocket');
+  const launchLines = document.getElementById('launchLines');
+
+  // 設定火箭圖片來源
+  launchRocket.src = IMG_ROCKET.src;
+
+  // 建立速度線
+  launchLines.innerHTML = '';
+  for(let i=0;i<18;i++){
+    const line = document.createElement('div');
+    line.className = 'speed-line';
+    const h = 80 + Math.random()*200;
+    line.style.cssText = `left:${Math.random()*100}%;height:${h}px;animation-delay:${Math.random()*0.4}s;animation-duration:${0.3+Math.random()*0.25}s;`;
+    launchLines.appendChild(line);
+  }
+
+  overlay.classList.add('active');
+
+  // 2.8s 後隱藏 overlay
+  setTimeout(()=>{
+    overlay.classList.remove('active');
+    document.getElementById('readyLabel').style.display='none';
+    readyTimer = 0;
+  }, 2800);
 }
 function resetGame(){
   document.getElementById('gameOverScreen').style.display='none';
   document.getElementById('tutorialScreen').style.display='none';
   document.getElementById('startScreen').style.display='flex';
   document.getElementById('hud').style.display='none';
+  document.getElementById('launchOverlay').classList.remove('active');
   state='start'; cancelAnimationFrame(frameId);
 }
 
@@ -583,7 +708,7 @@ function spawnStar(){
   meteors.push({x:Math.random()*(W-20)+10,y:-24,size:t==='yellow'?11:9,spd:speed*0.45+Math.random()*speed*0.3,type:'star',starType:t,collected:false,animT:Math.random()*100});
 }
 function spawnShootingStar(){
-  shooting_stars.push({x:Math.random()*W,y:0,len:Math.random()*60+40,spd:Math.random()*8+6,angle:Math.PI/4+(Math.random()-0.5)*0.3,alpha:1,life:40});
+  shooting_stars.push({x:Math.random()*W,y:0,len:Math.random()*140+80,spd:Math.random()*18+12,angle:Math.PI/4+(Math.random()-0.5)*0.3,alpha:1,life:50});
 }
 
 function spawnParticles(x,y,small){
@@ -745,7 +870,6 @@ canvas.addEventListener('mousemove',e=>{if(state!=='playing')return;const r=canv
 
 function update(dt){
   tick++;
-  if(readyTimer>0){readyTimer--;if(readyTimer===0){document.getElementById('readyLabel').style.display='none';gameStarted=true;}}
   if(keys['ArrowLeft']||keys['a'])rocketVX-=0.8;
   if(keys['ArrowRight']||keys['d'])rocketVX+=0.8;
   if(keys['ArrowUp']||keys['w'])rocketVY-=0.8;
@@ -789,13 +913,18 @@ function update(dt){
       }
     }
   }
-  for(let s of stars_bg){s.y+=s.spd*(gameStarted?1.5:0.5);if(s.y>H){s.y=0;s.x=Math.random()*W;}}
+  for(let s of stars_bg){
+    const isLaunching = document.getElementById('launchOverlay').classList.contains('active');
+    const moveSpd = (gameStarted||isLaunching) ? s.spd*(3.5 + speed*0.18) : s.spd*0.8;
+    s.y += moveSpd;
+    if(s.y>H){s.y=0;s.x=Math.random()*W;}
+  }
 
   if(gameStarted){
     meteorTimer++;starTimer++;ssTimer++;
     if(meteorTimer>Math.max(28,75-speed*2)){spawnMeteor();meteorTimer=0;}
     if(starTimer>42){spawnStar();starTimer=0;}
-    if(ssTimer>80){spawnShootingStar();ssTimer=0;}
+    if(ssTimer>50){spawnShootingStar();ssTimer=0;}
     for(let i=meteors.length-1;i>=0;i--){
       const m=meteors[i];
       m.y+=m.spd; m.animT++;
@@ -810,7 +939,7 @@ function update(dt){
       }
       if(m.y>H+40)meteors.splice(i,1);
     }
-    for(let i=shooting_stars.length-1;i>=0;i--){const ss=shooting_stars[i];ss.x+=Math.cos(ss.angle)*ss.spd;ss.y+=Math.sin(ss.angle)*ss.spd;ss.life--;ss.alpha=ss.life/40;if(ss.life<=0)shooting_stars.splice(i,1);}
+    for(let i=shooting_stars.length-1;i>=0;i--){const ss=shooting_stars[i];ss.x+=Math.cos(ss.angle)*ss.spd;ss.y+=Math.sin(ss.angle)*ss.spd;ss.life--;ss.alpha=ss.life/50;if(ss.life<=0)shooting_stars.splice(i,1);}
   }
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;if(!p.grow)p.vy+=0.1;if(p.grow)p.r+=p.grow;p.life--;p.alpha=p.life/p.maxLife;if(p.life<=0)particles.splice(i,1);}
 
@@ -825,11 +954,24 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   // BG
   ctx.fillStyle='#0a1628';ctx.fillRect(0,0,W,H);
-  if(gameStarted){ctx.strokeStyle='rgba(100,150,200,0.10)';ctx.lineWidth=1;for(let i=0;i<8;i++){const lx=(i/8)*W+20;ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,H);ctx.stroke();}}
-  for(let s of stars_bg){ctx.globalAlpha=0.5+s.bright*0.5;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}
+  const launchAnimActive = document.getElementById('launchOverlay').classList.contains('active');
+  if(gameStarted||launchAnimActive){ctx.strokeStyle='rgba(100,150,200,0.08)';ctx.lineWidth=1;for(let i=0;i<8;i++){const lx=(i/8)*W+20;ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,H);ctx.stroke();}}
+  for(let s of stars_bg){
+    ctx.globalAlpha=0.35+s.bright*0.55;
+    ctx.fillStyle=s.color||'#b8d8ff';
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+    // 高速時加尾跡
+    if(gameStarted && speed>10){
+      const trailLen = (speed-10)*0.9*s.spd;
+      ctx.globalAlpha=(0.35+s.bright*0.45)*0.4;
+      ctx.strokeStyle=s.color||'#8ab8e8';
+      ctx.lineWidth=s.r*0.8;
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x,s.y-trailLen);ctx.stroke();
+    }
+  }
   ctx.globalAlpha=1;
   // Shooting stars
-  for(let ss of shooting_stars){ctx.save();ctx.globalAlpha=ss.alpha*0.7;ctx.strokeStyle='#b0d8ff';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ss.x,ss.y);ctx.lineTo(ss.x-Math.cos(ss.angle)*ss.len,ss.y-Math.sin(ss.angle)*ss.len);ctx.stroke();ctx.restore();}
+  for(let ss of shooting_stars){ctx.save();ctx.globalAlpha=ss.alpha*0.85;ctx.strokeStyle='#78c8ff';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ss.x,ss.y);ctx.lineTo(ss.x-Math.cos(ss.angle)*ss.len,ss.y-Math.sin(ss.angle)*ss.len);ctx.stroke();ctx.restore();}
   // Items
   for(let m of meteors){
     if(m.type==='box') drawBox(ctx,m.x,m.y,m.size,m.animT);
@@ -837,9 +979,10 @@ function draw(){
   }
   // Particles
   for(let p of particles){ctx.save();ctx.globalAlpha=p.alpha;if(p.grow){ctx.strokeStyle=p.color;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();}else{ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}ctx.restore();}
-  // Rocket
-  const showRocket=!invincible||Math.floor(invincibleTimer/6)%2===0;
-  if(invincible&&showRocket){
+  // Rocket (hidden during launch animation)
+  const launchActive = document.getElementById('launchOverlay').classList.contains('active');
+  const showRocket=!launchActive && (!invincible||Math.floor(invincibleTimer/6)%2===0);
+  if(!launchActive && invincible&&showRocket){
     ctx.save();const pulse=0.5+0.5*Math.sin(invincibleTimer*0.3);ctx.strokeStyle=`rgba(100,200,255,${0.35+pulse*0.45})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(rocketX,rocketY-2,RW*0.55,0,Math.PI*2);ctx.stroke();ctx.restore();
   }
   if(showRocket) drawCatRocket(ctx,rocketX,rocketY,rocketVX,1,1);
