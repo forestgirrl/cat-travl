@@ -401,10 +401,97 @@ function drawStar(c, x, y, size, type, animT) {
   const s = size * pulse * 2.1;
   const rot = animT*0.022*(type==='yellow'?1:-1);
   const glowColor = type==='blue'?'#88bbff':type==='pink'?'#ffaabb':'#ffe566';
+
   c.save();
   c.translate(x, y);
+
+  if (type === 'blue') {
+    // 💙 藍色：柔和水波光圈（2層）+ 輕柔尾跡
+    const ring1Alpha = 0.18 + 0.10 * Math.sin(animT * 0.09);
+    const ring1R = s * 1.25 + 4 * Math.sin(animT * 0.07);
+    c.beginPath(); c.arc(0, 0, ring1R, 0, Math.PI*2);
+    c.strokeStyle = `rgba(120,200,255,${ring1Alpha})`; c.lineWidth = 2.5; c.stroke();
+    const ring2Alpha = 0.09 + 0.06 * Math.sin(animT * 0.09 + 1.5);
+    c.beginPath(); c.arc(0, 0, ring1R * 1.55, 0, Math.PI*2);
+    c.strokeStyle = `rgba(80,160,255,${ring2Alpha})`; c.lineWidth = 1.2; c.stroke();
+    for (let i = 1; i <= 4; i++) {
+      const ty = i * 9; const ta = 0.22 - i * 0.05;
+      c.globalAlpha = ta; c.fillStyle = '#80c8ff';
+      c.beginPath(); c.arc(Math.sin(animT*0.08+i)*2.5, ty, s*0.22*(1-i*0.18), 0, Math.PI*2); c.fill();
+    }
+    c.globalAlpha = 1;
+
+  } else if (type === 'pink') {
+    // 🩷 粉色：旋轉光芒射線 + 光圈 + 中量尾跡
+    const rayCount = 6;
+    for (let i = 0; i < rayCount; i++) {
+      const angle = (i / rayCount) * Math.PI * 2 + animT * 0.04;
+      const rayLen = s * 1.6 + 4 * Math.sin(animT * 0.1 + i);
+      const rayAlpha = 0.20 + 0.12 * Math.sin(animT * 0.1 + i * 1.1);
+      c.save(); c.rotate(angle);
+      const rayGrad = c.createLinearGradient(0, 0, 0, -rayLen);
+      rayGrad.addColorStop(0, `rgba(255,160,200,${rayAlpha})`);
+      rayGrad.addColorStop(1, 'rgba(255,100,160,0)');
+      c.fillStyle = rayGrad;
+      c.beginPath(); c.ellipse(0, -rayLen*0.5, 2.2, rayLen*0.5, 0, 0, Math.PI*2); c.fill();
+      c.restore();
+    }
+    const pRingA = 0.22 + 0.12 * Math.sin(animT * 0.07);
+    c.beginPath(); c.arc(0, 0, s * 1.35, 0, Math.PI*2);
+    c.strokeStyle = `rgba(255,140,190,${pRingA})`; c.lineWidth = 2.5; c.stroke();
+    for (let i = 1; i <= 6; i++) {
+      const ty = i * 7; const ta = 0.28 - i * 0.04;
+      const ox = Math.sin(animT*0.07 + i * 1.2) * 4;
+      c.globalAlpha = ta; c.fillStyle = i % 2 === 0 ? '#ffaabb' : '#ff80b0';
+      c.beginPath(); c.arc(ox, ty, s * 0.28 * (1-i*0.13), 0, Math.PI*2); c.fill();
+    }
+    c.globalAlpha = 1;
+
+  } else {
+    // ⭐ 黃色：強烈爆射光芒 + 雙層衝擊環 + 濃密尾跡
+    const glowRad = c.createRadialGradient(0, 0, s*0.3, 0, 0, s*2.2);
+    glowRad.addColorStop(0, `rgba(255,230,80,${0.22 + 0.10*Math.sin(animT*0.08)})`);
+    glowRad.addColorStop(0.5, 'rgba(255,180,30,0.08)');
+    glowRad.addColorStop(1, 'rgba(255,140,0,0)');
+    c.fillStyle = glowRad; c.beginPath(); c.arc(0, 0, s*2.2, 0, Math.PI*2); c.fill();
+    // 8條強光芒射線
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + animT * 0.035;
+      const long = i % 2 === 0;
+      const rayLen = (long ? s*2.6 : s*1.6) + 5 * Math.sin(animT * 0.09 + i);
+      const rayAlpha = (long ? 0.38 : 0.22) + 0.12 * Math.sin(animT * 0.09 + i);
+      c.save(); c.rotate(angle);
+      const yg = c.createLinearGradient(0, 0, 0, -rayLen);
+      yg.addColorStop(0, `rgba(255,220,60,${rayAlpha})`);
+      yg.addColorStop(0.5, `rgba(255,160,20,${rayAlpha*0.5})`);
+      yg.addColorStop(1, 'rgba(255,100,0,0)');
+      c.fillStyle = yg;
+      c.beginPath(); c.ellipse(0, -rayLen*0.5, long?3:2, rayLen*0.5, 0, 0, Math.PI*2); c.fill();
+      c.restore();
+    }
+    // 雙層衝擊環
+    const yr1 = s*1.5 + 5*Math.sin(animT*0.07);
+    c.beginPath(); c.arc(0, 0, yr1, 0, Math.PI*2);
+    c.strokeStyle = `rgba(255,210,50,${0.40 + 0.18*Math.sin(animT*0.09)})`; c.lineWidth = 3; c.stroke();
+    const yr2 = s*2.0 + 7*Math.sin(animT*0.07+1);
+    c.beginPath(); c.arc(0, 0, yr2, 0, Math.PI*2);
+    c.strokeStyle = `rgba(255,160,20,${0.18 + 0.10*Math.sin(animT*0.09+1)})`; c.lineWidth = 1.5; c.stroke();
+    // 濃密黃金尾跡
+    for (let i = 1; i <= 9; i++) {
+      const ty = i * 8; const ta = 0.38 - i * 0.038;
+      const ox = Math.sin(animT*0.06 + i * 0.8) * 5;
+      const tr = s * 0.38 * (1 - i * 0.09);
+      c.globalAlpha = ta;
+      c.fillStyle = i <= 3 ? '#ffe060' : i <= 6 ? '#ffb020' : '#ff8000';
+      c.shadowBlur = 6; c.shadowColor = '#ffcc00';
+      c.beginPath(); c.arc(ox, ty, tr, 0, Math.PI*2); c.fill();
+      c.shadowBlur = 0;
+    }
+    c.globalAlpha = 1;
+  }
+
   c.rotate(rot);
-  c.shadowBlur = 14;
+  c.shadowBlur = type==='yellow' ? 22 : type==='pink' ? 16 : 12;
   c.shadowColor = glowColor;
   c.drawImage(img, -s, -s, s*2, s*2);
   c.shadowBlur = 0;
@@ -508,10 +595,50 @@ function spawnParticles(x,y,small){
   }
 }
 function spawnCollect(x,y,type){
-  const color=type==='blue'?'#80ccff':type==='pink'?'#ffaabb':'#ffe066';
-  for(let i=0;i<12;i++){
-    const a=Math.random()*Math.PI*2;
-    particles.push({x,y,vx:Math.cos(a)*3.5,vy:Math.sin(a)*3.5-1,color,life:28,maxLife:28,alpha:1,r:3.5});
+  if(type==='blue'){
+    // 💙 藍色：12顆水藍小粒子，柔和擴散
+    for(let i=0;i<12;i++){
+      const a=(i/12)*Math.PI*2 + Math.random()*0.4;
+      const spd=2.5+Math.random()*2.0;
+      particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-0.8,color:Math.random()<0.5?'#80ccff':'#b0e8ff',life:30,maxLife:30,alpha:1,r:2.5+Math.random()*1.5});
+    }
+    // 1個大光圈粒子（擴散環效果）
+    particles.push({x,y,vx:0,vy:0,color:'rgba(100,180,255,0.5)',life:18,maxLife:18,alpha:1,r:18,grow:1.8});
+  } else if(type==='pink'){
+    // 🩷 粉色：20顆粉紅粒子 + 心形散射
+    for(let i=0;i<20;i++){
+      const a=(i/20)*Math.PI*2 + Math.random()*0.3;
+      const spd=3.0+Math.random()*3.0;
+      const colors=['#ffaabb','#ff80aa','#ffccdd','#ff60a0'];
+      particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-1.5,color:colors[Math.floor(Math.random()*colors.length)],life:38,maxLife:38,alpha:1,r:3+Math.random()*2.5});
+    }
+    // 3個擴散光圈
+    for(let i=0;i<3;i++){
+      particles.push({x,y,vx:0,vy:0,color:`rgba(255,${100+i*30},${160+i*20},0.45)`,life:20+i*4,maxLife:20+i*4,alpha:1,r:14+i*8,grow:2.2+i*0.5});
+    }
+    // 4顆大星形粒子往外飛
+    for(let i=0;i<4;i++){
+      const a=(i/4)*Math.PI*2;
+      particles.push({x,y,vx:Math.cos(a)*5.5,vy:Math.sin(a)*5.5,color:'#ff60a0',life:22,maxLife:22,alpha:1,r:5.5});
+    }
+  } else {
+    // ⭐ 黃色：35顆金色粒子 + 強烈爆炸 + 衝擊波
+    for(let i=0;i<35;i++){
+      const a=(i/35)*Math.PI*2 + Math.random()*0.25;
+      const spd=3.5+Math.random()*5.5;
+      const colors=['#ffe060','#ffcc20','#ffaa00','#fff0a0','#ff8800'];
+      particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,color:colors[Math.floor(Math.random()*colors.length)],life:45+Math.random()*15,maxLife:60,alpha:1,r:3.5+Math.random()*4});
+    }
+    // 4層衝擊環
+    for(let i=0;i<4;i++){
+      particles.push({x,y,vx:0,vy:0,color:`rgba(255,${200-i*30},${50-i*10},0.55)`,life:16+i*5,maxLife:16+i*5,alpha:1,r:12+i*9,grow:3.5+i*1.0});
+    }
+    // 8顆大型閃光往外飛
+    for(let i=0;i<8;i++){
+      const a=(i/8)*Math.PI*2;
+      const spd=6+Math.random()*3;
+      particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,color:i%2===0?'#ffe060':'#ffaa00',life:28,maxLife:28,alpha:1,r:7+Math.random()*3});
+    }
   }
 }
 
@@ -686,7 +813,7 @@ function update(dt){
     }
     for(let i=shooting_stars.length-1;i>=0;i--){const ss=shooting_stars[i];ss.x+=Math.cos(ss.angle)*ss.spd;ss.y+=Math.sin(ss.angle)*ss.spd;ss.life--;ss.alpha=ss.life/40;if(ss.life<=0)shooting_stars.splice(i,1);}
   }
-  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life--;p.alpha=p.life/p.maxLife;if(p.life<=0)particles.splice(i,1);}
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;if(!p.grow)p.vy+=0.1;if(p.grow)p.r+=p.grow;p.life--;p.alpha=p.life/p.maxLife;if(p.life<=0)particles.splice(i,1);}
 
   const sf=Math.min((speed-5)/17,1),ang=-2.2+sf*4.4;
   document.getElementById('needle').setAttribute('x2',(40+Math.sin(ang)*26).toFixed(1));
@@ -710,7 +837,7 @@ function draw(){
     else if(!m.collected) drawStar(ctx,m.x,m.y,m.size,m.starType,m.animT);
   }
   // Particles
-  for(let p of particles){ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore();}
+  for(let p of particles){ctx.save();ctx.globalAlpha=p.alpha;if(p.grow){ctx.strokeStyle=p.color;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();}else{ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}ctx.restore();}
   // Rocket
   const showRocket=!invincible||Math.floor(invincibleTimer/6)%2===0;
   if(invincible&&showRocket){
