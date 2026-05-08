@@ -1,3 +1,4 @@
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -373,7 +374,7 @@ scaleWrapper();
 window.addEventListener('resize', scaleWrapper);
 
 const MAX_LIVES = 3;
-const RW = 44, RH = 52;
+const RW = 44, RH = 58;
 const MIN_X = RW, MAX_X = W-RW, MIN_Y = H-RH*2.5, MAX_Y = H-RH*1.25;
 
 let state='start', rocketX=W/2, rocketY=H-RH*1.5, rocketVX=0, rocketVY=0;
@@ -430,7 +431,7 @@ function drawCatRocket(c, x, y, vx, scale=1, alpha=1) {
     c.restore();
   }
 
-  const iw = RW*2.0, ih = RH*2.0;
+  const iw = RW*2.0, ih = RH*2.5;
   const noseY = -ih/2; // 火箭頂端 Y
 
   // 前端衝擊波（速度 > 30% 才出現）
@@ -617,7 +618,7 @@ function drawBox(c, x, y, size, animT) {
 
 // ── Game state ──────────────────────────────────────────
 function initGame(){
-  rocketX=W/2; rocketY=H-RH*1.0; rocketVX=0; rocketVY=0;
+  rocketX=W/2; rocketY=H-RH*1.5; rocketVX=0; rocketVY=0;
   speed=5; distance=0; lives=MAX_LIVES; invincible=false; invincibleTimer=0; slowTimer=0;
   meteors=[]; particles=[]; shooting_stars=[];
   gameStarted=false; readyTimer=0;
@@ -997,3 +998,4 @@ function loop(ts){
   if(state==='playing')frameId=requestAnimationFrame(loop);
 }
 </script>
+
