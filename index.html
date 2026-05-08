@@ -303,14 +303,92 @@ function drawCatRocket(c, x, y, vx, scale=1, alpha=1) {
   c.rotate(vx * 0.04);
   c.scale(scale, scale);
   c.globalAlpha = alpha;
-  const flameH = 20 + speed * 1.3 + Math.random() * 7;
+
+  // 加速比例 0~1
+  const boost = Math.min((speed - 5) / 17, 1);
+
+  // 主火焰（速度越快越長越亮）
+  const flameH = 20 + speed * 1.3 + Math.random() * 7 + boost * 30;
+  const flameW = 9 + boost * 5;
   const fg = c.createLinearGradient(0, RH*0.6, 0, RH*0.6+flameH);
-  fg.addColorStop(0,'rgba(150,220,255,0.95)');
-  fg.addColorStop(0.5,'rgba(90,160,255,0.55)');
+  fg.addColorStop(0, `rgba(${150+Math.round(boost*105)},${220-Math.round(boost*80)},255,0.98)`);
+  fg.addColorStop(0.4,'rgba(90,160,255,0.65)');
   fg.addColorStop(1,'rgba(60,100,220,0)');
   c.fillStyle = fg;
-  c.beginPath(); c.ellipse(0, RH*0.6+flameH*0.5, 9, flameH*0.5, 0,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(0, RH*0.6+flameH*0.5, flameW, flameH*0.5, 0,0,Math.PI*2); c.fill();
+
+  // 加速時：側翼小火焰
+  if(boost > 0.2) {
+    const sideAlpha = (boost - 0.2) / 0.8;
+    const sideH = flameH * 0.55 * sideAlpha;
+    [-14, 14].forEach(ox => {
+      const sf = c.createLinearGradient(ox, RH*0.7, ox, RH*0.7+sideH);
+      sf.addColorStop(0, `rgba(120,200,255,${0.7*sideAlpha})`);
+      sf.addColorStop(1, 'rgba(80,120,255,0)');
+      c.fillStyle = sf;
+      c.beginPath(); c.ellipse(ox, RH*0.7+sideH*0.5, 4+sideAlpha*3, sideH*0.5, 0,0,Math.PI*2); c.fill();
+    });
+  }
+
+  // 加速時：火焰光暈
+  if(boost > 0.4) {
+    const glowAlpha = (boost - 0.4) * 0.4;
+    c.save();
+    c.shadowBlur = 30 + boost * 40;
+    c.shadowColor = `rgba(80,180,255,${glowAlpha})`;
+    c.fillStyle = `rgba(100,180,255,${glowAlpha * 0.3})`;
+    c.beginPath(); c.ellipse(0, RH*0.6+flameH*0.3, flameW*1.5, flameH*0.4, 0,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+
   const iw = RW*2.0, ih = RH*2.5;
+  const noseY = -ih/2; // 火箭頂端 Y
+
+  // 前端衝擊波（速度 > 30% 才出現）
+  if(boost > 0.3) {
+    const waveAlpha = (boost - 0.3) / 0.7;
+    // 衝擊環：隨 tick 跳動
+    const wavePulse = 0.7 + 0.3 * Math.sin(tick * 0.25);
+    const waveR = (8 + boost * 14) * wavePulse;
+    c.save();
+    c.shadowBlur = 16 + boost * 20;
+    c.shadowColor = `rgba(160,220,255,${waveAlpha * 0.8})`;
+    c.strokeStyle = `rgba(180,230,255,${waveAlpha * 0.7 * wavePulse})`;
+    c.lineWidth = 1.5 + boost * 1.5;
+    c.beginPath();
+    c.ellipse(0, noseY, waveR, waveR * 0.35, 0, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
+
+    // 第二層較淡的環
+    if(boost > 0.6) {
+      const waveAlpha2 = (boost - 0.6) / 0.4;
+      const waveR2 = waveR * 1.7;
+      c.save();
+      c.strokeStyle = `rgba(140,200,255,${waveAlpha2 * 0.35 * wavePulse})`;
+      c.lineWidth = 1;
+      c.beginPath();
+      c.ellipse(0, noseY, waveR2, waveR2 * 0.3, 0, 0, Math.PI * 2);
+      c.stroke();
+      c.restore();
+    }
+  }
+
+  // 前端光暈 glow（速度越快越亮）
+  if(boost > 0.1) {
+    const noseAlpha = (boost - 0.1) / 0.9;
+    const noseGlow = c.createRadialGradient(0, noseY, 0, 0, noseY, 18 + boost * 20);
+    noseGlow.addColorStop(0, `rgba(200,235,255,${noseAlpha * 0.55})`);
+    noseGlow.addColorStop(0.5, `rgba(120,190,255,${noseAlpha * 0.25})`);
+    noseGlow.addColorStop(1, 'rgba(80,150,255,0)');
+    c.save();
+    c.fillStyle = noseGlow;
+    c.beginPath();
+    c.arc(0, noseY, 18 + boost * 20, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+  }
+
   c.drawImage(IMG_ROCKET, -iw/2, -ih/2, iw, ih);
   c.restore();
 }
@@ -558,6 +636,31 @@ function update(dt){
       speed=Math.min(speed+0.001,22);
     }
     distance+=speed*dt*0.005;
+
+    // 加速尾焰粒子
+    const boost = Math.min((speed-5)/17, 1);
+    if(boost > 0 && Math.random() < 0.3 + boost * 0.7) {
+      const count = Math.floor(1 + boost * 3);
+      for(let i=0; i<count; i++) {
+        const ox = (Math.random()-0.5) * 16;
+        const oy = RH * 0.6 + Math.random() * 10;
+        const spd = 1.5 + boost * 2.5 + Math.random() * 1.5;
+        // 顏色從藍白到橘紅隨速度變化
+        const r = Math.round(100 + boost * 155);
+        const g = Math.round(180 - boost * 80);
+        const b = 255;
+        particles.push({
+          x: rocketX + ox, y: rocketY + oy,
+          vx: (Math.random()-0.5)*1.2,
+          vy: spd,
+          color: `rgb(${r},${g},${b})`,
+          life: 12 + Math.random()*10,
+          maxLife: 22,
+          alpha: 0.7 + boost*0.3,
+          r: 1.5 + boost * 2 + Math.random()
+        });
+      }
+    }
   }
   for(let s of stars_bg){s.y+=s.spd*(gameStarted?1.5:0.5);if(s.y>H){s.y=0;s.x=Math.random()*W;}}
 
